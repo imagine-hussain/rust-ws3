@@ -41,8 +41,8 @@ impl Buffer {
     }
 
     /// Removes the last char in the buffer.
-    fn pop_char(&mut self) {
-        self.text.pop();
+    fn pop_char(&mut self) -> Option<char> {
+        self.text.pop()
     }
 
     // /// This is an example of a function that takes the Buffer as owned,
@@ -90,9 +90,6 @@ impl Controller for BufferEditor {
             SimpleEvent::Just(KeyCode::Enter) => {
                 self.buffer.push_char('\n')
             },
-            SimpleEvent::Just(KeyCode::Backspace) => {
-                self.buffer.pop_char()
-            },
             SimpleEvent::Just(KeyCode::Esc) => {
                 game.end_game();
             },
@@ -108,6 +105,26 @@ impl Controller for BufferEditor {
                 viewport.y += 1;
                 game.set_viewport(viewport)
             },
+            SimpleEvent::WithControl(KeyCode::Char('s')) => {
+                // Implement
+                println!("Saving...");
+                // todo!()
+            },
+            // This is bad binding
+            SimpleEvent::WithControl(KeyCode::Char('f')) => {
+                // Clear entire line
+                loop {
+                    match self.buffer.pop_char() {
+                        Some('\n') => break,
+                        Some(_) => {},
+                        None => break,
+                    }
+                }
+            },
+            SimpleEvent::Just(KeyCode::Backspace) => {
+                self.buffer.pop_char();
+            },
+
             _ => {}
         }
         let mut chunkmap = CharChunkMap::new();
