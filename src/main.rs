@@ -1,5 +1,6 @@
 use termgame::{Controller, CharChunkMap, GameSettings, Game, GameEvent, SimpleEvent, KeyCode, run_game};
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::time::Duration;
 
@@ -139,7 +140,7 @@ impl Controller for BufferEditor {
     fn on_tick(&mut self, _game: &mut Game) {}
 }
 
-fn run_command(cmd: &str)  -> Result<(), Box<dyn Error>> {
+fn run_command(cmd: &str, buffers: &mut HashMap<String, Buffer>)  -> Result<(), Box<dyn Error>> {
     let mut editor = BufferEditor {
         buffer: Buffer::new()
     };
@@ -163,13 +164,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Welcome to BuffeRS. ");
 
+    let mut buffers: HashMap<String, Buffer> = HashMap::new();
+
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new()?;
     loop {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
-                run_command(&line)?;
+                run_command(&line, &mut buffers)?;
                 rl.add_history_entry(line.as_str());
             },
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {

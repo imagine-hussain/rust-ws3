@@ -11,3 +11,4 @@ BuffeRS
  - [ ] Write the result of a command into a buffer.
  - [ ] Write buffer to file, Read buffer from file
  - [ ] Replace section of one buffer with another.
+
