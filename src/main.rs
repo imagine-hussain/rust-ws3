@@ -7,7 +7,8 @@ use std::time::Duration;
 
 /// This is a single "buffer".
 struct Buffer {
-    text: String
+    text: String,
+    file: Option<String>,
 }
 
 impl Buffer {
@@ -15,9 +16,10 @@ impl Buffer {
     /// ```rust
     /// Buffer::new()
     /// ```
-    fn new() -> Buffer {
+    fn new(file: Option<String>) -> Buffer {
         Buffer {
-            text: String::new()
+            text: String::new(),
+            file
         }
     }
 
@@ -141,12 +143,12 @@ impl Controller for BufferEditor {
 }
 
 fn run_command(cmd: &str, buffers: &mut HashMap<String, Buffer>)  -> Result<(), Box<dyn Error>> {
-    let mut editor = BufferEditor {
-        buffer: Buffer::new()
-    };
+
+    let mut editors: HashMap<String, BufferEditor> = HashMap::new();
+
     if cmd.starts_with("open") {
         run_game(
-            &mut editor,
+            fetch_editor(&mut editors, &cmd),
             GameSettings::new()
                 .tick_duration(Duration::from_millis(25))
         )?;
@@ -156,6 +158,19 @@ fn run_command(cmd: &str, buffers: &mut HashMap<String, Buffer>)  -> Result<(), 
 
     Ok(())
 }
+
+fn fetch_editor(editors: &mut HashMap<String, BufferEditor>, cmd: &str) -> &mut BufferEditor {
+    let mut args = cmd.split_whitespace();
+    args.next();
+    let file = args.next().unwrap();
+    if !editors.contains_key(file) {
+        editors.insert(file.to_string(), BufferEditor {
+            buffer: Buffer::new(Some(file.to_string()))
+        });
+    }
+    editors.get_mut(file).unwrap()
+}
+
 
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
