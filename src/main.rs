@@ -142,13 +142,13 @@ impl Controller for BufferEditor {
     fn on_tick(&mut self, _game: &mut Game) {}
 }
 
-fn run_command(cmd: &str, buffers: &mut HashMap<String, Buffer>)  -> Result<(), Box<dyn Error>> {
+fn run_command(cmd: &str, editors: &mut HashMap<String, BufferEditor>)  -> Result<(), Box<dyn Error>> {
 
-    let mut editors: HashMap<String, BufferEditor> = HashMap::new();
+    let mut buffer_uiids: i32 = 0;
 
     if cmd.starts_with("open") {
         run_game(
-            fetch_editor(&mut editors, &cmd),
+            fetch_editor(editors, cmd, &mut buffer_uiids),
             GameSettings::new()
                 .tick_duration(Duration::from_millis(25))
         )?;
@@ -159,16 +159,24 @@ fn run_command(cmd: &str, buffers: &mut HashMap<String, Buffer>)  -> Result<(), 
     Ok(())
 }
 
-fn fetch_editor(editors: &mut HashMap<String, BufferEditor>, cmd: &str) -> &mut BufferEditor {
+fn fetch_editor<'a> (editors: &'a mut HashMap<String, BufferEditor>, cmd: &str, uuid: &mut i32) -> &'a mut BufferEditor {
     let mut args = cmd.split_whitespace();
     args.next();
-    let file = args.next().unwrap();
-    if !editors.contains_key(file) {
-        editors.insert(file.to_string(), BufferEditor {
-            buffer: Buffer::new(Some(file.to_string()))
-        });
-    }
-    editors.get_mut(file).unwrap()
+    let buffer_name = match args.next() {
+        Some(name) => String::from(name),
+        None => {
+            // New buffer w/ random name (not most bullet proof strat)
+            loop {
+                let name = format!("buffer_{}", uuid);
+                if !editors.contains_key(&name) {
+                    editors.insert(name.clone(), BufferEditor{buffer: Buffer::new(None)});
+                    break name;
+                }
+            }
+        }
+    };
+
+    editors.get_mut(&buffer_name).unwrap()
 }
 
 
@@ -179,7 +187,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Welcome to BuffeRS. ");
 
-    let mut buffers: HashMap<String, Buffer> = HashMap::new();
+    let mut editors: HashMap<String, BufferEditor> = HashMap::new();
 
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new()?;
@@ -187,7 +195,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
-                run_command(&line, &mut buffers)?;
+                run_command(&line, &mut editors)?;
                 rl.add_history_entry(line.as_str());
             },
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
