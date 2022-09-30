@@ -1,5 +1,6 @@
 use termgame::{Controller, CharChunkMap, GameSettings, Game, GameEvent, SimpleEvent, KeyCode, run_game};
 
+use std::collections::HashMap;
 use std::error::Error;
 use std::time::Duration;
 
@@ -41,8 +42,8 @@ impl Buffer {
     }
 
     /// Removes the last char in the buffer.
-    fn pop_char(&mut self) {
-        self.text.pop();
+    fn pop_char(&mut self) -> Option<char> {
+        self.text.pop()
     }
 
     // /// This is an example of a function that takes the Buffer as owned,
@@ -90,9 +91,6 @@ impl Controller for BufferEditor {
             SimpleEvent::Just(KeyCode::Enter) => {
                 self.buffer.push_char('\n')
             },
-            SimpleEvent::Just(KeyCode::Backspace) => {
-                self.buffer.pop_char()
-            },
             SimpleEvent::Just(KeyCode::Esc) => {
                 game.end_game();
             },
@@ -108,6 +106,26 @@ impl Controller for BufferEditor {
                 viewport.y += 1;
                 game.set_viewport(viewport)
             },
+            SimpleEvent::WithControl(KeyCode::Char('s')) => {
+                // Implement
+                println!("Saving...");
+                // todo!()
+            },
+            // This is bad binding
+            SimpleEvent::WithControl(KeyCode::Char('f')) => {
+                // Clear entire line
+                loop {
+                    match self.buffer.pop_char() {
+                        Some('\n') => break,
+                        Some(_) => {},
+                        None => break,
+                    }
+                }
+            },
+            SimpleEvent::Just(KeyCode::Backspace) => {
+                self.buffer.pop_char();
+            },
+
             _ => {}
         }
         let mut chunkmap = CharChunkMap::new();
@@ -122,7 +140,7 @@ impl Controller for BufferEditor {
     fn on_tick(&mut self, _game: &mut Game) {}
 }
 
-fn run_command(cmd: &str)  -> Result<(), Box<dyn Error>> {
+fn run_command(cmd: &str, buffers: &mut HashMap<String, Buffer>)  -> Result<(), Box<dyn Error>> {
     let mut editor = BufferEditor {
         buffer: Buffer::new()
     };
@@ -146,13 +164,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Welcome to BuffeRS. ");
 
+    let mut buffers: HashMap<String, Buffer> = HashMap::new();
+
     // `()` can be used when no completer is required
     let mut rl = Editor::<()>::new()?;
     loop {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
-                run_command(&line)?;
+                run_command(&line, &mut buffers)?;
                 rl.add_history_entry(line.as_str());
             },
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
