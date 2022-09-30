@@ -160,10 +160,9 @@ fn run_command(cmd: &str, editors: &mut HashMap<String, BufferEditor>)  -> Resul
 }
 
 fn fetch_editor<'a> (editors: &'a mut HashMap<String, BufferEditor>, cmd: &str, uuid: &mut i32) -> &'a mut BufferEditor {
-    let mut args = cmd.split_whitespace();
-    args.next();
-    let buffer_name = match args.next() {
-        Some(name) => String::from(name),
+    let args: Vec<&str> = cmd.split_whitespace().collect();
+    let buffer_name: String = match args.get(2) {
+        Some(name) => String::from(*name),
         None => {
             // New buffer w/ random name (not most bullet proof strat)
             loop {
