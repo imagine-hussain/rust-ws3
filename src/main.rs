@@ -146,36 +146,74 @@ fn run_command(cmd: &str, editors: &mut HashMap<String, BufferEditor>)  -> Resul
 
     let mut buffer_uiids: i32 = 0;
 
-    if cmd.starts_with("open") {
-        run_game(
+    match first_word(cmd) {
+        "open" => run_game(
             fetch_editor(editors, cmd, &mut buffer_uiids),
             GameSettings::new()
                 .tick_duration(Duration::from_millis(25))
-        )?;
-    } else {
-        println!("Command not recognised!");
+        )?,
+        "search" => {
+            print_buffer_searches(editors, cmd)
+        }
+        _ => println!("Command not recognised")
     }
+    // if cmd.starts_with("open") {
+    //     run_game(
+    //         fetch_editor(editors, cmd, &mut buffer_uiids),
+    //         GameSettings::new()
+    //             .tick_duration(Duration::from_millis(25))
+    //     )?;
+    // } else if cmd.starts_with("serach"){
+    //     println!("Command not recognised!");
+    // }
 
     Ok(())
 }
 
+fn print_buffer_searches(editors: &HashMap<String, BufferEditor>, cmd: &str) {
+
+    let first_word = first_word(cmd);
+    let index_rest = first_word.len() - 1;
+    let search_term = &cmd[index_rest..];
+
+    for editor in editors.values() {
+        for line in editor.buffer.text.lines() {
+            if line.contains(search_term) {
+                println!("{}", line);
+            }
+        }
+    }
+}
+
+fn first_word (s: &str) -> &str {
+    let bytes = s.as_bytes();
+
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[0..i];
+        }
+    }
+
+    s
+}
+
 fn fetch_editor<'a> (editors: &'a mut HashMap<String, BufferEditor>, cmd: &str, uuid: &mut i32) -> &'a mut BufferEditor {
     let args: Vec<&str> = cmd.split_whitespace().collect();
-    let buffer_name: String = match args.get(2) {
+    let buffer_name: String = match args.get(1) {
         Some(name) => String::from(*name),
         None => {
             // New buffer w/ random name (not most bullet proof strat)
             loop {
                 let name = format!("buffer_{}", uuid);
                 if !editors.contains_key(&name) {
-                    editors.insert(name.clone(), BufferEditor{buffer: Buffer::new(None)});
                     break name;
                 }
+                *uuid += 1;
             }
         }
     };
 
-    editors.get_mut(&buffer_name).unwrap()
+    editors.entry(buffer_name).or_insert(BufferEditor { buffer: Buffer::new(None) })
 }
 
 
